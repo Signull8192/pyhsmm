@@ -228,7 +228,7 @@ class _HMMBase(Model):
 
     ### plotting
 
-    _fig_sz = 6
+    _fig_sz = 10
 
     def make_figure(self,**kwargs):
         sz = self._fig_sz
@@ -250,7 +250,7 @@ class _HMMBase(Model):
         assert len(stateseq_axs) == len(self.states_list)
         sp2_artists = \
             [artist for s,ax,data in zip(self.states_list,stateseq_axs,self.datas)
-                for artist in self.plot_stateseq(s,ax,plot_slice,update=update,draw=False)]
+                for artist in self.plot_stateseq(s,ax,plot_slice,update=update,draw=False,max_len=max([len(s.stateseq[plot_slice]) for s in self.states_list]))]
 
         if draw: plt.draw()
 
@@ -360,12 +360,12 @@ class _HMMBase(Model):
         else:
             return dict((idx,color) for idx in range(self.num_states))
 
-    def plot_stateseq(self,s,ax=None,plot_slice=slice(None),update=False,draw=True):
+    def plot_stateseq(self,s,ax=None,plot_slice=slice(None),update=False,draw=True,max_len=-1):
         s = self.states_list[s] if isinstance(s,int) else s
         ax = ax if ax else plt.gca()
         state_colors = self._get_colors(scalars=True)
 
-        self._plot_stateseq_pcolor(s,ax,state_colors,plot_slice,update)
+        self._plot_stateseq_pcolor(s,ax,state_colors,plot_slice,update,max_len=max_len)
         data_values_artist = self._plot_stateseq_data_values(s,ax,state_colors,plot_slice,update)
 
         if draw: plt.draw()
@@ -373,7 +373,7 @@ class _HMMBase(Model):
         return [data_values_artist]
 
     def _plot_stateseq_pcolor(self,s,ax=None,state_colors=None,
-            plot_slice=slice(None),update=False,color_method=None):
+            plot_slice=slice(None),update=False,color_method=None,max_len=-1):
         # TODO pcolormesh instead of pcolorfast?
         from pyhsmm.util.general import rle
 
@@ -395,8 +395,9 @@ class _HMMBase(Model):
         C = np.atleast_2d([state_colors[state] for state in stateseq_norep])
 
         s._pcolor_im = ax.pcolorfast(x,y,C,vmin=0,vmax=1,alpha=0.3)
+        ax.tick_params(labelbottom='off')
         ax.set_ylim((datamin,datamax))
-        ax.set_xlim((0,len(stateseq)))
+        ax.set_xlim((0,len(stateseq) if max_len == -1 else max_len))
         ax.set_yticks([])
 
     def _plot_stateseq_data_values(self,s,ax,state_colors,plot_slice,update):
